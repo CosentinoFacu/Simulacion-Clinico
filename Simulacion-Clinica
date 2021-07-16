@@ -1,0 +1,183 @@
+#define R 9       //Pin Led Rojo
+#define G 10      //Pin Led Verde
+#define B 11      //Pin Led Azul
+#define POT 0     //Pin Potenciometro
+#define IN4 7     //Pin Led Rojo
+#define IN3 6     //Pin Led Verde
+#define IN2 5     //Pin Led Azul
+#define IN1 4     //Pin Potenciometro
+
+int verde=100;  //Porcentaje del LED verde
+int azul=100;   //Porcentaje del LED Azul
+
+int rojo;       //Porcentaje del LED Rojo
+int motorbits;   //Salida a driver paso a paso
+int estadomotor=0; //activacion de motor 0=activado 1=desactivado   
+int flagmotor; //Estado de motor 0=activado 1=desactivado 
+
+int mediopaso[8][4]={{1,0,0,0},
+                     {1,1,0,0},
+                     {0,1,0,0},
+                     {0,1,1,0},
+                     {0,0,1,0},
+                     {0,0,1,1},
+                     {0,0,0,1},
+                     {1,0,0,1}};
+                    
+ 
+void setup()
+{
+  pinMode(R, OUTPUT);
+  pinMode(G, OUTPUT);
+  pinMode(B, OUTPUT);
+  
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT);
+  pinMode(IN4, OUTPUT);
+  
+  Serial.begin(9600);
+}
+
+void loop()
+{ 
+  
+//----------Sistema de Coloracion------------//  
+  rojo=Coloracion(POT,R,G,verde,B,azul); 
+  
+//----------Sistema de Pulso------------//
+  if(estadomotor==0){
+  flagmotor=Motor(2000,2);
+  //Serial.println(flagmotor);
+  }
+  else{
+  flagmotor=0;
+  }
+  
+//----------Sistema de Temperatura------------//
+  
+}
+
+
+
+
+float Coloracion(char a,char b,char c,int d, char e, int f){
+  /*
+  a= Entrada Analogica
+  b= Salida PWM Rojo
+  c= Salida PWM Verde
+  d= valor PWM Verde
+  e= Salida PWM Blue
+  f= valor PWM Blue
+  */
+  
+  float lectura;
+  float lecturaporcentual;
+  
+  lectura=analogRead(a);
+  lectura=(255.0/1023.0)*lectura;
+  lecturaporcentual=(100.0/255.0)*lectura;
+  lectura=int(lectura);
+/*
+  Serial.print("Rojo: ");
+  Serial.print(lecturaporcentual);
+  Serial.print("%");
+  
+  Serial.print("  Verde: ");
+  Serial.print(d);
+  Serial.print("%");
+  
+  Serial.print("  Azul: ");
+  Serial.print(f);
+  Serial.println("%");
+*/
+  d=(255/100)*d;
+  f=(255/100)*f;
+  
+  analogWrite(b,lectura);
+  analogWrite(c,d);
+  analogWrite(e,f);
+ 
+  return lecturaporcentual; 
+}
+
+
+
+
+int Motor(int b, int paso){
+ 
+  if(paso==0){
+  motorbits=0b1000;
+  for(int i=0;i<3;i++){
+  enceder(b);  
+  motorbits=motorbits>>1;  
+  }
+  motorbits=0b0001;
+  enceder(b);
+  }
+     
+  if(paso==1){
+  motorbits=0b0011;
+  for(int i=0;i<2;i++){
+  //Serial.println(motorbits);
+  motorbits=(motorbits>>1)|0b1000;
+  enceder(b);
+  }
+  for(int i=0;i<2;i++){
+  //Serial.println(motorbits);
+  motorbits=(motorbits>>1);
+  enceder(b);
+  }
+  }
+  
+  if(paso==2){
+  for(int j=0;j<8;j++){
+  motorbits=0;
+  for(int i=0;i<4;i++){
+  int a= potencia(2,i);
+  /*Serial.print("2 a la ");
+  Serial.print(i);
+  Serial.print(" = ");
+  Serial.println(a);*/
+  motorbits=motorbits+(a*mediopaso[j][i]);
+  }
+  enceder(b);
+  Serial.println(motorbits);
+  }  
+  }
+  
+  return 1;
+  
+}
+
+void enceder(int a){
+  
+  int est[5]={IN1,IN2,IN3,IN4};
+  
+  est[0]=((motorbits)& 0b1000)>>3;
+  est[1]=((motorbits)& 0b0100)>>2;
+  est[2]=((motorbits)& 0b0010)>>1;
+  est[3]=((motorbits)& 0b0001);
+  digitalWrite(IN1,est[0]);
+  digitalWrite(IN2,est[1]);
+  digitalWrite(IN3,est[2]);
+  digitalWrite(IN4,est[3]);
+  
+  delay(a);
+}
+
+int potencia(int numero, int exponente){
+  
+int resultado=numero;
+
+  if(exponente==0){
+    resultado=1;
+    }
+
+
+  while(exponente>1){
+    resultado=resultado*numero;
+    exponente--;
+    }
+    return resultado;
+  }
