@@ -2,18 +2,29 @@
 #define G 10      //Pin Led Verde
 #define B 11      //Pin Led Azul
 #define POT 0     //Pin Potenciometro
+#define VERDE 100 //Porcentaje LED verde
+#define AZUL 100  //Porcentaje LED verde
+
 #define IN4 7     //Pin Led Rojo
 #define IN3 6     //Pin Led Verde
 #define IN2 5     //Pin Led Azul
 #define IN1 4     //Pin Potenciometro
+#define TIEMPO 15 //Tiempo entre paso del motor 
+#define PASO 2    //Configuracion de pasos 0=simple 1=doble 2=medio
 
-int verde=100;  //Porcentaje del LED verde
-int azul=100;   //Porcentaje del LED Azul
+#define CELDA 3       //Pin de celda peltier
+#define DUTY  5       //Ciclo de trabajo en porcentaje
+#define TEMPRETAL 30.0  //Setpoint Temperatura
+#define TEMPREAL 1    //Pin LM35
+
 
 int rojo;       //Porcentaje del LED Rojo
+
 int motorbits;   //Salida a driver paso a paso
 int estadomotor=0; //activacion de motor 0=activado 1=desactivado   
 int flagmotor; //Estado de motor 0=activado 1=desactivado 
+
+float recto=0;
 
 int mediopaso[8][4]={{1,0,0,0},
                      {1,1,0,0},
@@ -36,6 +47,8 @@ void setup()
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
   
+  pinMode(CELDA, OUTPUT);
+  
   Serial.begin(9600);
 }
 
@@ -43,11 +56,12 @@ void loop()
 { 
   
 //----------Sistema de Coloracion------------//  
-  rojo=Coloracion(POT,R,G,verde,B,azul); 
+  rojo=Coloracion(POT,R,G,VERDE,B,AZUL); 
   
 //----------Sistema de Pulso------------//
+  
   if(estadomotor==0){
-  flagmotor=Motor(2000,2);
+  flagmotor=Motor(TIEMPO,PASO);
   //Serial.println(flagmotor);
   }
   else{
@@ -55,9 +69,9 @@ void loop()
   }
   
 //----------Sistema de Temperatura------------//
-  
-}
+  recto=temperatura(TEMPREAL,TEMPRETAL,CELDA);
 
+}
 
 
 
@@ -142,7 +156,7 @@ int Motor(int b, int paso){
   motorbits=motorbits+(a*mediopaso[j][i]);
   }
   enceder(b);
-  Serial.println(motorbits);
+  //Serial.println(motorbits);
   }  
   }
   
@@ -181,3 +195,25 @@ int resultado=numero;
     }
     return resultado;
   }
+
+
+float temperatura(int sensortemp, int setpoint,int pincelda){
+
+	int lectura;
+  	int outpwm;
+  	float tobtenida;	
+  
+  	lectura=analogRead(sensortemp);
+	tobtenida=lectura*(0.0048/0.01);
+  
+  	if(tobtenida<setpoint){
+    outpwm=(255/100)*DUTY;  
+  	analogWrite(pincelda,outpwm);
+  	}
+  	else{
+  	analogWrite(pincelda,0);
+ 	}
+  	delay(1);
+  	//Serial.println(lectura);
+  	return tobtenida;
+}
